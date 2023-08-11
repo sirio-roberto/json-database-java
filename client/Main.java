@@ -2,6 +2,7 @@ package client;
 
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
+import com.google.gson.Gson;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -14,12 +15,12 @@ public class Main {
     private static final int SERVER_PORT = 34522;
 
     @Parameter(names = "-t", description = "Type of request (set, get, delete or exit)")
-    private String typeOfRequest;
+    private String type;
 
-    @Parameter(names = "-i", description = "Index of the cell array we have on the server (from 1 to 1000)")
-    private int cellIndex;
+    @Parameter(names = "-k", description = "Key of our database map objects")
+    private String key;
 
-    @Parameter(names = "-m", description = "Value set on the cell if user uses the 'set' command")
+    @Parameter(names = "-v", description = "Value set on the map if user uses the 'set' command")
     private String value;
 
     public static void main(String[] args) {
@@ -38,8 +39,8 @@ public class Main {
                 DataInputStream input = new DataInputStream(socket.getInputStream());
                 DataOutputStream output  = new DataOutputStream(socket.getOutputStream())
         ) {
-            output.writeUTF(getSimplifiedCommand());
-            System.out.println("Sent: " + getSimplifiedCommand());
+            output.writeUTF(getJsonCommand());
+            System.out.println("Sent: " + getJsonCommand());
 
             String receivedMsg = input.readUTF();
             System.out.println("Received: " + receivedMsg);
@@ -49,11 +50,8 @@ public class Main {
         }
     }
 
-    private String getSimplifiedCommand() {
-        return String.format("%s %s %s",
-                typeOfRequest,
-                !"exit".equals(typeOfRequest) ? cellIndex : "",
-                "set".equals(typeOfRequest) ? value : "")
-                .trim();
+    private String getJsonCommand() {
+        ClientRequest request = new ClientRequest(type, key, value);
+        return new Gson().toJson(request);
     }
 }
