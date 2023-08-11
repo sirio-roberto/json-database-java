@@ -1,51 +1,37 @@
 package server;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 public class JsonDBArrayImpl implements JsonDBDao {
 
-    private final String[] infoArray;
+    private final Map<String, String> infoMap;
 
     public JsonDBArrayImpl() {
-        infoArray = new String[1000];
-        Arrays.fill(infoArray, "");
+        infoMap = new HashMap<>();
     }
 
     @Override
-    public String set(int id, String newInfo) {
-        if (isValidIndex(id)) {
-            int arrayIndex = id - 1;
-            infoArray[arrayIndex] = newInfo;
+    public String set(String key, String value) {
+        infoMap.put(key, value);
+        return "OK";
+    }
 
+    @Override
+    public String get(String key) {
+        if (infoMap.containsKey(key)) {
+            return infoMap.get(key);
+        }
+        return "ERROR";
+    }
+
+    @Override
+    public String delete(String key) {
+        if (infoMap.containsKey(key)) {
+            infoMap.remove(key);
             return "OK";
         }
         return "ERROR";
-    }
-
-    @Override
-    public String get(int id) {
-        if (isValidIndex(id)) {
-            int arrayIndex = id - 1;
-            if (infoArray[arrayIndex].isBlank()) {
-                return "ERROR";
-            }
-            return infoArray[arrayIndex];
-        }
-        return "ERROR";
-    }
-
-    @Override
-    public String delete(int id) {
-        if (isValidIndex(id)) {
-            int arrayIndex = id - 1;
-            infoArray[arrayIndex] = "";
-
-            return "OK";
-        }
-        return "ERROR";
-    }
-
-    private boolean isValidIndex(int id) {
-        return id >= 1 && id <= infoArray.length;
     }
 }

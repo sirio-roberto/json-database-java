@@ -1,5 +1,11 @@
 package server;
 
+import client.ClientRequest;
+import com.google.gson.Gson;
+import server.responses.AbstractResponse;
+import server.responses.ErrorResponse;
+import server.responses.OkResponse;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Scanner;
@@ -20,28 +26,14 @@ public class JsonApp {
         commands.add(new ExitCommand("exit"));
     }
 
-    public void run() {
-        isRunning = true;
-        try (Scanner scan = new Scanner(System.in)) {
-            while (isRunning) {
-                String[] userCommand = scan.nextLine().trim().split(" ");
-                commands.forEach(command -> {
-                    if (command.name.equals(userCommand[0])) {
-                        command.execute(Arrays.copyOfRange(userCommand, 1, userCommand.length));
-                    }
-                });
-            }
-        }
-    }
-
     public String runAndGetResponse(String userCommand) {
-        String[] userCommandArray = userCommand.trim().split(" ");
+        String[] userCommandArray = userCommand.trim().split(",");
         for (Command command: commands) {
-            if (command.name.equals(userCommandArray[0])) {
-                return command.execute(Arrays.copyOfRange(userCommandArray, 1, userCommandArray.length));
+            if (userCommandArray[0].contains(command.name)) {
+                return command.execute(userCommand);
             }
         }
-        return "ERROR";
+        return new Gson().toJson(new ErrorResponse("ERROR", "Unknown command"));
     }
 
     abstract static class Command {
@@ -51,7 +43,7 @@ public class JsonApp {
             this.name = name;
         }
 
-        abstract String execute(String... args);
+        abstract String execute(String jsonCommand);
     }
 
     private class GetCommand extends Command {
@@ -61,9 +53,11 @@ public class JsonApp {
         }
 
         @Override
-        String execute(String... args) {
-            int id = Integer.parseInt(args[0]);
-            return jsonDB.get(id);
+        String execute(String jsonCommand) {
+            ClientRequest request = new Gson().fromJson(jsonCommand, ClientRequest.class);
+
+            AbstractResponse response = getResponseFromString(jsonDB.get(request.getKey()));
+            return new Gson().toJson(response);
         }
     }
 
@@ -74,10 +68,11 @@ public class JsonApp {
         }
 
         @Override
-        String execute(String... args) {
-            int id = Integer.parseInt(args[0]);
+        String execute(String jsonCommand) {
+            ClientRequest request = new Gson().fromJson(jsonCommand, ClientRequest.class);
 
-            return jsonDB.set(id, concatArrayInString(Arrays.copyOfRange(args,1, args.length)));
+            AbstractResponse response = getResponseFromString(jsonDB.set(request.getKey(), request.getValue()));
+            return new Gson().toJson(response);
         }
 
         private String concatArrayInString(String[] strings) {
@@ -96,21 +91,31 @@ public class JsonApp {
         }
 
         @Override
-        String execute(String... args) {
-            int id = Integer.parseInt(args[0]);
-            return jsonDB.delete(id);
+        String execute(String jsonCommand) {
+            ClientRequest request = new Gson().fromJson(jsonCommand, ClientRequest.class);
+
+            AbstractResponse response = getResponseFromString(jsonDB.delete(request.getKey()));
+            return new Gson().toJson(response);
         }
+
     }
     private class ExitCommand extends Command {
-
         public ExitCommand(String name) {
             super(name);
         }
 
         @Override
-        String execute(String... args) {
+        String execute(String jsonCommand) {
             isRunning = false;
-            return "OK";
+            return new Gson().toJson(new OkResponse("OK", null));
         }
+
+    }
+    private AbstractResponse getResponseFromString(String dbMethodResponse) {
+        return switch (dbMethodResponse) {
+            case "ERROR" -> new ErrorResponse("ERROR", "No such key");
+            case "OK" -> new OkResponse("OK", null);
+            default -> new OkResponse("OK", dbMethodResponse);
+        };
     }
 }

@@ -26,7 +26,7 @@ public class Main {
                         DataOutputStream output = new DataOutputStream(socket.getOutputStream())
                 ) {
                     String receivedCommand = input.readUTF();
-                    if ("exit".equals(receivedCommand)) {
+                    if (receivedCommand.contains("exit")) {
                         isRunning = false;
                     }
                     output.writeUTF(app.runAndGetResponse(receivedCommand));

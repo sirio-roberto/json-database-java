@@ -1,7 +1,7 @@
 package server;
 
 public interface JsonDBDao {
-    String set(int id, String newInfo);
-    String get(int id);
-    String delete(int id);
+    String set(String key, String value);
+    String get(String key);
+    String delete(String key);
 }
