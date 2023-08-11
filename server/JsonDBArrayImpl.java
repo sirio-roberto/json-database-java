@@ -7,49 +7,45 @@ public class JsonDBArrayImpl implements JsonDBDao {
     private final String[] infoArray;
 
     public JsonDBArrayImpl() {
-        infoArray = new String[100];
+        infoArray = new String[1000];
         Arrays.fill(infoArray, "");
     }
 
     @Override
-    public void set(int id, String newInfo) {
+    public String set(int id, String newInfo) {
         if (isValidIndex(id)) {
             int arrayIndex = id - 1;
             infoArray[arrayIndex] = newInfo;
 
-            System.out.println("OK");
-        } else {
-            System.out.println("ERROR");
+            return "OK";
         }
+        return "ERROR";
     }
 
     @Override
-    public void get(int id) {
+    public String get(int id) {
         if (isValidIndex(id)) {
             int arrayIndex = id - 1;
             if (infoArray[arrayIndex].isBlank()) {
-                System.out.println("ERROR");
-            } else {
-                System.out.println(infoArray[arrayIndex]);
+                return "ERROR";
             }
-        } else {
-            System.out.println("ERROR");
+            return infoArray[arrayIndex];
         }
+        return "ERROR";
     }
 
     @Override
-    public void delete(int id) {
+    public String delete(int id) {
         if (isValidIndex(id)) {
             int arrayIndex = id - 1;
             infoArray[arrayIndex] = "";
 
-            System.out.println("OK");
-        } else {
-            System.out.println("ERROR");
+            return "OK";
         }
+        return "ERROR";
     }
 
     private boolean isValidIndex(int id) {
-        return id >= 1 && id <= 100;
+        return id >= 1 && id <= infoArray.length;
     }
 }

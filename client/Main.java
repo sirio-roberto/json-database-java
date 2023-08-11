@@ -13,7 +13,7 @@ public class Main {
     private static final String SERVER_ADDRESS = "127.0.0.1";
     private static final int SERVER_PORT = 34522;
 
-    @Parameter(names = "-t", description = "Type of request (set, get or delete)")
+    @Parameter(names = "-t", description = "Type of request (set, get, delete or exit)")
     private String typeOfRequest;
 
     @Parameter(names = "-i", description = "Index of the cell array we have on the server (from 1 to 1000)")
@@ -50,6 +50,10 @@ public class Main {
     }
 
     private String getSimplifiedCommand() {
-        return String.format("%s %s %s!", typeOfRequest, cellIndex, "set".equals(typeOfRequest) ? value : "");
+        return String.format("%s %s %s",
+                typeOfRequest,
+                !"exit".equals(typeOfRequest) ? cellIndex : "",
+                "set".equals(typeOfRequest) ? value : "")
+                .trim();
     }
 }

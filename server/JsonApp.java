@@ -34,6 +34,16 @@ public class JsonApp {
         }
     }
 
+    public String runAndGetResponse(String userCommand) {
+        String[] userCommandArray = userCommand.trim().split(" ");
+        for (Command command: commands) {
+            if (command.name.equals(userCommandArray[0])) {
+                return command.execute(Arrays.copyOfRange(userCommandArray, 1, userCommandArray.length));
+            }
+        }
+        return "ERROR";
+    }
+
     abstract static class Command {
         private final String name;
 
@@ -41,7 +51,7 @@ public class JsonApp {
             this.name = name;
         }
 
-        abstract void execute(String... args);
+        abstract String execute(String... args);
     }
 
     private class GetCommand extends Command {
@@ -51,9 +61,9 @@ public class JsonApp {
         }
 
         @Override
-        void execute(String... args) {
+        String execute(String... args) {
             int id = Integer.parseInt(args[0]);
-            jsonDB.get(id);
+            return jsonDB.get(id);
         }
     }
 
@@ -64,10 +74,10 @@ public class JsonApp {
         }
 
         @Override
-        void execute(String... args) {
+        String execute(String... args) {
             int id = Integer.parseInt(args[0]);
 
-            jsonDB.set(id, concatArrayInString(Arrays.copyOfRange(args,1, args.length)));
+            return jsonDB.set(id, concatArrayInString(Arrays.copyOfRange(args,1, args.length)));
         }
 
         private String concatArrayInString(String[] strings) {
@@ -86,9 +96,9 @@ public class JsonApp {
         }
 
         @Override
-        void execute(String... args) {
+        String execute(String... args) {
             int id = Integer.parseInt(args[0]);
-            jsonDB.delete(id);
+            return jsonDB.delete(id);
         }
     }
     private class ExitCommand extends Command {
@@ -98,8 +108,9 @@ public class JsonApp {
         }
 
         @Override
-        void execute(String... args) {
+        String execute(String... args) {
             isRunning = false;
+            return "OK";
         }
     }
 }
