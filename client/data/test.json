@@ -1,6 +1,7 @@
+{"type":"set","key":"name","value":"Kate2"}
+{"type":"get","key":["person","name"]}
 {"type":"get","key":"1"}
 {"type":"set","key":"1","value":"HelloWorld!"}
 {"type":"get","key":"name"}
 {"type":"exit"}
-{"type":"set","key":"name","value":"Kate"}
 {"type":"delete","key":"name"}
