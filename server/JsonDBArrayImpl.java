@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class JsonDBArrayImpl implements JsonDBDao {
-    private final String FILE_DIR = "JSON Database (Java)/task/src/server/data/db.json";
+    private final String FILE_DIR = "./JSON Database (Java)/task/src/server/data/db.json";
 
     private ReadWriteLock lock = new ReentrantReadWriteLock();
     private Lock readLock = lock.readLock();
@@ -26,7 +26,12 @@ public class JsonDBArrayImpl implements JsonDBDao {
     @Override
     public String set(String key, String value) {
         getDataFromFile();
-        ServerInfo info = new ServerInfo(key, value);
+        ServerInfo info = getInfoFromSet(key);
+        if (info == null) {
+            info = new ServerInfo(key, value);
+        } else {
+            info.setValue(value);
+        }
         infoSet.add(info);
         saveDataToFile();
         return "OK";

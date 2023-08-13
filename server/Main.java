@@ -26,7 +26,7 @@ public class Main {
             while (isRunning) {
                 try {
                     // Set a timeout for accept() to allow checking the isRunning flag
-                    server.setSoTimeout(1000);
+                    server.setSoTimeout(100);
                     Socket socket = server.accept();
 
                     executor.submit(() -> {
