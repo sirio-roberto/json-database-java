@@ -5,10 +5,17 @@ import com.google.gson.Gson;
 import java.io.*;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class JsonDBArrayImpl implements JsonDBDao {
     private final String FILE_DIR = "JSON Database (Java)/task/src/server/data/db.json";
+
+    private ReadWriteLock lock = new ReentrantReadWriteLock();
+    private Lock readLock = lock.readLock();
+    private Lock writeLock = lock.writeLock();
 
     private final Set<ServerInfo> infoSet;
 
@@ -58,6 +65,7 @@ public class JsonDBArrayImpl implements JsonDBDao {
 
     private void getDataFromFile() {
         infoSet.clear();
+        readLock.lock();
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_DIR))) {
             infoSet.addAll(reader.lines()
                     .map(l -> new Gson().fromJson(l, ServerInfo.class))
@@ -65,9 +73,11 @@ public class JsonDBArrayImpl implements JsonDBDao {
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
+        readLock.unlock();
     }
 
     private void saveDataToFile() {
+        writeLock.lock();
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_DIR))) {
             for (ServerInfo info : infoSet) {
                 writer.write(new Gson().toJson(info));
@@ -76,5 +86,6 @@ public class JsonDBArrayImpl implements JsonDBDao {
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
+        writeLock.unlock();
     }
 }

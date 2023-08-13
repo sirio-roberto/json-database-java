@@ -1,6 +1,6 @@
-{"type":"exit"},
-{"type":"set","key":"1","value":"HelloWorld!"}
-{"type":"set","key":"name","value":"Kate"}
 {"type":"get","key":"name"}
+{"type":"set","key":"1","value":"HelloWorld!"}
+{"type":"exit"},
+{"type":"set","key":"name","value":"Kate"}
 {"type":"delete","key":"name"}
 {"type":"get","key":"1"}
