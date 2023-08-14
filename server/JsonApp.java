@@ -209,6 +209,9 @@ public class JsonApp {
     }
 
     private String removeQuotes(String stringWithQuotes) {
-        return stringWithQuotes.replaceAll("\"", "");
+        if (stringWithQuotes.indexOf('"') == 0 && stringWithQuotes.lastIndexOf('"') == stringWithQuotes.length() - 1) {
+            return stringWithQuotes.substring(1, stringWithQuotes.length() - 1);
+        }
+        return stringWithQuotes;
     }
 }

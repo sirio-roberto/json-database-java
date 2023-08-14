@@ -3,7 +3,7 @@ package server;
 import java.util.Objects;
 
 public class ServerInfo {
-    private String key;
+    private final String key;
     private String value;
 
     public ServerInfo(String key, String value) {

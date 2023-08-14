@@ -1,6 +1,7 @@
 package server;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import java.io.*;
 import java.util.HashSet;
@@ -11,11 +12,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
 
 public class JsonDBArrayImpl implements JsonDBDao {
-    private final String FILE_DIR = "./JSON Database (Java)/task/src/server/data/db.json";
+//    private final String FILE_DIR = "./JSON Database (Java)/task/src/server/data/db.json";
+    private final String FILE_DIR = System.getProperty("user.dir") + "/src/server/data/db.json";
 
-    private ReadWriteLock lock = new ReentrantReadWriteLock();
-    private Lock readLock = lock.readLock();
-    private Lock writeLock = lock.writeLock();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
+    private final Lock readLock = lock.readLock();
+    private final Lock writeLock = lock.writeLock();
 
     private final Set<ServerInfo> infoSet;
 
@@ -72,9 +74,14 @@ public class JsonDBArrayImpl implements JsonDBDao {
         infoSet.clear();
         readLock.lock();
         try (BufferedReader reader = new BufferedReader(new FileReader(FILE_DIR))) {
-            infoSet.addAll(reader.lines()
-                    .map(l -> new Gson().fromJson(l, ServerInfo.class))
-                    .collect(Collectors.toSet()));
+            Set<JsonObject> jsonObjs = reader.lines()
+                    .map(l -> new Gson().fromJson(l, JsonObject.class))
+                    .collect(Collectors.toSet());
+            for (JsonObject obj : jsonObjs) {
+                String key = obj.get("key").getAsString();
+                String value = obj.get("value").toString();
+                infoSet.add(new ServerInfo(key, value));
+            }
         } catch (IOException e) {
             System.out.println(e.getMessage());
         }
@@ -85,7 +92,14 @@ public class JsonDBArrayImpl implements JsonDBDao {
         writeLock.lock();
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(FILE_DIR))) {
             for (ServerInfo info : infoSet) {
-                writer.write(new Gson().toJson(info));
+                JsonObject obj = new JsonObject();
+                obj.addProperty("key", info.getKey());
+                try {
+                    obj.add("value", new Gson().fromJson(info.getValue(), JsonObject.class));
+                } catch (Exception ex) {
+                    obj.addProperty("value", info.getValue());
+                }
+                writer.write(new Gson().toJson(obj));
                 writer.newLine();
             }
         } catch (IOException e) {

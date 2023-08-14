@@ -1,9 +1,9 @@
 package client;
 
 public class ClientRequest {
-    private String type;
-    private String key;
-    private String value;
+    private final String type;
+    private final String key;
+    private final String value;
 
     public ClientRequest(String type, String key, String value) {
         this.type = type;

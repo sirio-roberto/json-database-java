@@ -1,12 +1,12 @@
+{"type":"get","key":["person"]}
+{"type":"get","key":["person","name"]}
+{"type":"set","key":"1","value":"HelloWorld!"}
 {"type":"set","key":["person"],"value":{"name":"Elon Musk3","car":{"model":"Tesla Roadster","year":"2018"},"rocket":{"name":"Falcon 9","launches":"87"}}}
 {"type":"delete","key":["person","car","year"]}
 {"type":"delete","key":["text"]}
-{"type":"get","key":["person"]}
-{"type":"get","key":["person","name"]}
 {"type":"get","key":"name"}
 {"type":"get","key":"1"}
 {"type":"set","key":["person","rocket","launches"],"value":"89"}
 {"type":"set","key":"person","value":{"name":"Elon Musk","car":{"model":"Tesla Roadster","year":"2018"},"rocket":{"name":"Falcon 9","launches":"87"}}}
 {"type":"set","key":["name"],"value":"Kate2"}
-{"type":"set","key":"1","value":"HelloWorld!"}
 {"type":"exit"}

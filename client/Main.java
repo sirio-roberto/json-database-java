@@ -3,6 +3,7 @@ package client;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 
 import java.io.*;
 import java.net.Socket;
@@ -45,7 +46,14 @@ public class Main {
             System.out.println("Sent: " + getJsonCommand());
 
             String receivedMsg = input.readUTF();
-            System.out.println("Received: " + receivedMsg);
+            JsonObject responseObj = new Gson().fromJson(receivedMsg, JsonObject.class);
+            if (responseObj.has("value")) {
+                String valueProperty = responseObj.get("value").getAsString();
+                if (valueProperty.contains("{") && valueProperty.contains("}")) {
+                    responseObj.add("value", new Gson().fromJson(valueProperty, JsonObject.class));
+                }
+            }
+            System.out.println("Received: " + new Gson().toJson(responseObj));
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -61,7 +69,9 @@ public class Main {
     }
 
     private String getRequestFromFile(String fileName) {
-        String filePath = "JSON Database (Java)/task/src/client/data/" + fileName;
+//        String filePath = "JSON Database (Java)/task/src/client/data/" + fileName;
+        String filePath = System.getProperty("user.dir") + "/src/client/data/" + fileName;
+
         try (Scanner fileScan = new Scanner(new File(filePath))) {
             if (fileScan.hasNext()) {
                 return fileScan.nextLine();
