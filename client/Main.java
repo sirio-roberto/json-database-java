@@ -3,8 +3,6 @@ package client;
 import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 
 import java.io.*;
 import java.net.Socket;
@@ -19,7 +17,7 @@ public class Main {
     private String type;
 
     @Parameter(names = "-k", description = "Key of our database map objects")
-    private String[] key;
+    private String key;
 
     @Parameter(names = "-v", description = "Value set on the map if user uses the 'set' command")
     private String value;
