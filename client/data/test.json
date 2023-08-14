@@ -1,3 +1,5 @@
+{"type":"delete","key":["person","car","year"]}
+{"type":"delete","key":["text"]}
 {"type":"get","key":["person"]}
 {"type":"get","key":["person","name"]}
 {"type":"get","key":"name"}
@@ -8,4 +10,3 @@
 {"type":"set","key":["name"],"value":"Kate2"}
 {"type":"set","key":"1","value":"HelloWorld!"}
 {"type":"exit"}
-{"type":"delete","key":"name"}

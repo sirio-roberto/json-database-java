@@ -140,12 +140,35 @@ public class JsonApp {
 
         @Override
         String execute(JsonElement jsonRequest) {
-            ClientRequest request = new Gson().fromJson(jsonRequest, ClientRequest.class);
-            // TODO: workaround for simple scenario
-            String keyStr = request.getKey()[request.getKey().length - 1];
+            JsonElement keyElement = getElementValueByKeyName(jsonRequest, "key");
+            AbstractResponse response;
 
-            AbstractResponse response = getResponseFromString(jsonDB.delete(keyStr));
-            return new Gson().toJson(response);
+            if (keyElement != null) {
+                if (keyElement.isJsonPrimitive()) {
+                    String keyStr = removeQuotes(keyElement.getAsString());
+                    response = getResponseFromString(jsonDB.delete(keyStr));
+                } else {
+                    JsonArray keyArray = keyElement.getAsJsonArray();
+                    String keyStr = removeQuotes(keyArray.get(0).getAsString());
+
+                    if (keyArray.size() == 1) {
+                        response = getResponseFromString(jsonDB.delete(keyStr));
+                    } else {
+                        JsonElement rootValueElement = new Gson().fromJson(jsonDB.get(keyStr), JsonElement.class);
+                        JsonElement elementToEdit = rootValueElement;
+                        for (int i = 1; i < keyArray.size() - 1; i++) {
+                            elementToEdit = getElementValueByKeyName(elementToEdit, removeQuotes(keyArray.get(i).getAsString()));
+                        }
+                        if (elementToEdit != null) {
+                            JsonObject elementToEditObj = elementToEdit.getAsJsonObject();
+                            elementToEditObj.remove(keyArray.get(keyArray.size() - 1).getAsString());
+                        }
+                        response = getResponseFromString(jsonDB.set(keyStr, new Gson().toJson(rootValueElement)));
+                    }
+                }
+                return new Gson().toJson(response);
+            }
+            return new Gson().toJson(new ErrorResponse("ERROR", "Invalid Json request"));
         }
 
     }
