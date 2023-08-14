@@ -1,9 +1,7 @@
 package server;
 
 import client.ClientRequest;
-import com.google.gson.Gson;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
+import com.google.gson.*;
 import server.responses.AbstractResponse;
 import server.responses.ErrorResponse;
 import server.responses.OkResponse;
@@ -83,10 +81,38 @@ public class JsonApp {
             JsonElement keyElement = getElementByName(requestJson, "key");
             JsonElement valueElement = getElementByName(requestJson, "value");
 
-            if (keyElement != null && valueElement != null && keyElement.isJsonPrimitive()) {
-                String typeStr = keyElement.getAsString().replaceAll("\"", "");
-                AbstractResponse response = getResponseFromString(jsonDB.set(typeStr, valueElement.getAsString()));
-                return new Gson().toJson(response);
+            if (keyElement != null && valueElement != null) {
+                if (keyElement.isJsonPrimitive()) {
+                    String keyStr = keyElement.getAsString().replaceAll("\"", "");
+                    AbstractResponse response = getResponseFromString(jsonDB.set(keyStr, valueElement.toString()));
+                    return new Gson().toJson(response);
+                } else if (keyElement.isJsonArray()){
+                    JsonArray keyArray = keyElement.getAsJsonArray();
+                    JsonElement rootElementKey = keyArray.get(0);
+                    String rootKeyStr = rootElementKey.getAsString().replaceAll("\"", "");
+
+                    if (keyArray.size() == 1) {
+                        AbstractResponse response = getResponseFromString(jsonDB.set(rootKeyStr, valueElement.toString()));
+                        return new Gson().toJson(response);
+                    }
+
+                    if (rootElementKey.isJsonPrimitive()) {
+                        String rootValueStr = jsonDB.get(rootKeyStr);
+                        JsonElement rootValueElement = new Gson().fromJson(rootValueStr, JsonElement.class);
+                        JsonElement elementToEdit = null;
+                        for (int i = 0; i < keyArray.size() - 1; i++) {
+                            if (elementToEdit == null) {
+                                elementToEdit = getElementByName(rootValueElement, keyArray.get(i).getAsString().replaceAll("\"", ""));
+                            } else {
+                                elementToEdit = getElementByName(elementToEdit, keyArray.get(i).getAsString().replaceAll("\"", ""));
+                            }
+                        }
+                        JsonObject elementToEditObj = elementToEdit.getAsJsonObject();
+                        elementToEditObj.addProperty(keyArray.get(keyArray.size() - 1).getAsString(), valueElement.toString().replaceAll("\"", ""));
+                        AbstractResponse response = getResponseFromString(jsonDB.set(rootKeyStr, new Gson().toJson(rootValueElement)));
+                        return new Gson().toJson(response);
+                    }
+                }
             }
             return new Gson().toJson(new ErrorResponse("ERROR", "Invalid Json request"));
         }
@@ -140,6 +166,18 @@ public class JsonApp {
                         return requestObj.get(memberName);
                     }
                     getElementByName(requestObj.get(memberName), name);
+                }
+            }
+        }
+        return null;
+    }
+
+    private JsonElement getFirstChildElement(JsonElement element) {
+        if (element.isJsonObject()) {
+            JsonObject requestObj = element.getAsJsonObject();
+            if (requestObj.size() != 0) {
+                for (String memberName : requestObj.keySet()) {
+                    return requestObj.get(memberName);
                 }
             }
         }
