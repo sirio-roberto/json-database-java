@@ -10,7 +10,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class JsonApp {
-    private boolean isRunning;
     private final JsonDBDao jsonDB;
     private final Set<Command> commands;
 
@@ -25,15 +24,15 @@ public class JsonApp {
     }
 
     public String runAndGetResponse(String userCommand) {
-        JsonElement requestJson = new Gson().fromJson(userCommand, JsonElement.class);
+        JsonElement jsonRequest = new Gson().fromJson(userCommand, JsonElement.class);
 
-        JsonElement typeElement = getElementByName(requestJson, "type");
+        JsonElement typeElement = getElementValueByKeyName(jsonRequest, "type");
         if (typeElement != null && typeElement.isJsonPrimitive()) {
-            String typeStr = typeElement.getAsString().replaceAll("\"", "");
+            String typeStr = removeQuotes(typeElement.getAsString());
 
             for (Command command: commands) {
                 if (typeStr.equals(command.name)) {
-                    return command.execute(userCommand);
+                    return command.execute(jsonRequest);
                 }
             }
         }
@@ -48,7 +47,7 @@ public class JsonApp {
             this.name = name;
         }
 
-        abstract String execute(String jsonCommand);
+        abstract String execute(JsonElement jsonRequest);
     }
 
     private class GetCommand extends Command {
@@ -58,13 +57,31 @@ public class JsonApp {
         }
 
         @Override
-        String execute(String jsonCommand) {
-            ClientRequest request = new Gson().fromJson(jsonCommand, ClientRequest.class);
-            // TODO: workaround for simple scenario
-            String keyStr = request.getKey()[request.getKey().length - 1];
+        String execute(JsonElement jsonRequest) {
+            JsonElement keyElement = getElementValueByKeyName(jsonRequest, "key");
+            AbstractResponse response;
 
-            AbstractResponse response = getResponseFromString(jsonDB.get(keyStr));
-            return new Gson().toJson(response);
+            if (keyElement != null) {
+                if (keyElement.isJsonPrimitive()) {
+                    String keyStr = removeQuotes(keyElement.getAsString());
+                    response = getResponseFromString(jsonDB.get(keyStr));
+                } else {
+                    JsonArray keyArray = keyElement.getAsJsonArray();
+                    String keyStr = removeQuotes(keyArray.get(0).getAsString());
+
+                    if (keyArray.size() == 1) {
+                        response = getResponseFromString(jsonDB.get(keyStr));
+                    } else {
+                        JsonElement elementToGet = new Gson().fromJson(jsonDB.get(keyStr), JsonElement.class);
+                        for (int i = 1; i < keyArray.size(); i++) {
+                            elementToGet = getElementValueByKeyName(elementToGet, removeQuotes(keyArray.get(i).getAsString()));
+                        }
+                        response = getResponseFromString(elementToGet.getAsString());
+                    }
+                }
+                return new Gson().toJson(response);
+            }
+            return new Gson().toJson(new ErrorResponse("ERROR", "Invalid Json request"));
         }
     }
 
@@ -75,21 +92,19 @@ public class JsonApp {
         }
 
         @Override
-        String execute(String jsonCommand) {
-            JsonElement requestJson = new Gson().fromJson(jsonCommand, JsonElement.class);
-
-            JsonElement keyElement = getElementByName(requestJson, "key");
-            JsonElement valueElement = getElementByName(requestJson, "value");
+        String execute(JsonElement jsonRequest) {
+            JsonElement keyElement = getElementValueByKeyName(jsonRequest, "key");
+            JsonElement valueElement = getElementValueByKeyName(jsonRequest, "value");
 
             if (keyElement != null && valueElement != null) {
                 if (keyElement.isJsonPrimitive()) {
-                    String keyStr = keyElement.getAsString().replaceAll("\"", "");
+                    String keyStr = removeQuotes(keyElement.getAsString());
                     AbstractResponse response = getResponseFromString(jsonDB.set(keyStr, valueElement.toString()));
                     return new Gson().toJson(response);
                 } else if (keyElement.isJsonArray()){
                     JsonArray keyArray = keyElement.getAsJsonArray();
                     JsonElement rootElementKey = keyArray.get(0);
-                    String rootKeyStr = rootElementKey.getAsString().replaceAll("\"", "");
+                    String rootKeyStr = removeQuotes(rootElementKey.getAsString());
 
                     if (keyArray.size() == 1) {
                         AbstractResponse response = getResponseFromString(jsonDB.set(rootKeyStr, valueElement.toString()));
@@ -99,24 +114,21 @@ public class JsonApp {
                     if (rootElementKey.isJsonPrimitive()) {
                         String rootValueStr = jsonDB.get(rootKeyStr);
                         JsonElement rootValueElement = new Gson().fromJson(rootValueStr, JsonElement.class);
-                        JsonElement elementToEdit = null;
-                        for (int i = 0; i < keyArray.size() - 1; i++) {
-                            if (elementToEdit == null) {
-                                elementToEdit = getElementByName(rootValueElement, keyArray.get(i).getAsString().replaceAll("\"", ""));
-                            } else {
-                                elementToEdit = getElementByName(elementToEdit, keyArray.get(i).getAsString().replaceAll("\"", ""));
-                            }
+                        JsonElement elementToEdit = rootValueElement;
+                        for (int i = 1; i < keyArray.size() - 1; i++) {
+                            elementToEdit = getElementValueByKeyName(elementToEdit, removeQuotes(keyArray.get(i).getAsString()));
                         }
-                        JsonObject elementToEditObj = elementToEdit.getAsJsonObject();
-                        elementToEditObj.addProperty(keyArray.get(keyArray.size() - 1).getAsString(), valueElement.toString().replaceAll("\"", ""));
-                        AbstractResponse response = getResponseFromString(jsonDB.set(rootKeyStr, new Gson().toJson(rootValueElement)));
-                        return new Gson().toJson(response);
+                        if (elementToEdit != null) {
+                            JsonObject elementToEditObj = elementToEdit.getAsJsonObject();
+                            elementToEditObj.addProperty(keyArray.get(keyArray.size() - 1).getAsString(), removeQuotes(valueElement.toString()));
+                            AbstractResponse response = getResponseFromString(jsonDB.set(rootKeyStr, new Gson().toJson(rootValueElement)));
+                            return new Gson().toJson(response);
+                        }
                     }
                 }
             }
             return new Gson().toJson(new ErrorResponse("ERROR", "Invalid Json request"));
         }
-
     }
 
     private class DeleteCommand extends Command {
@@ -127,8 +139,8 @@ public class JsonApp {
         }
 
         @Override
-        String execute(String jsonCommand) {
-            ClientRequest request = new Gson().fromJson(jsonCommand, ClientRequest.class);
+        String execute(JsonElement jsonRequest) {
+            ClientRequest request = new Gson().fromJson(jsonRequest, ClientRequest.class);
             // TODO: workaround for simple scenario
             String keyStr = request.getKey()[request.getKey().length - 1];
 
@@ -137,14 +149,13 @@ public class JsonApp {
         }
 
     }
-    private class ExitCommand extends Command {
+    private static class ExitCommand extends Command {
         public ExitCommand(String name) {
             super(name);
         }
 
         @Override
-        String execute(String jsonCommand) {
-            isRunning = false;
+        String execute(JsonElement jsonRequest) {
             return new Gson().toJson(new OkResponse("OK", null));
         }
 
@@ -157,7 +168,7 @@ public class JsonApp {
         };
     }
 
-    private JsonElement getElementByName(JsonElement requestJson, String name) {
+    private JsonElement getElementValueByKeyName(JsonElement requestJson, String name) {
         if (requestJson.isJsonObject()) {
             JsonObject requestObj = requestJson.getAsJsonObject();
             if (requestObj.size() != 0) {
@@ -165,22 +176,14 @@ public class JsonApp {
                     if (memberName.equals(name)) {
                         return requestObj.get(memberName);
                     }
-                    getElementByName(requestObj.get(memberName), name);
+                    getElementValueByKeyName(requestObj.get(memberName), name);
                 }
             }
         }
         return null;
     }
 
-    private JsonElement getFirstChildElement(JsonElement element) {
-        if (element.isJsonObject()) {
-            JsonObject requestObj = element.getAsJsonObject();
-            if (requestObj.size() != 0) {
-                for (String memberName : requestObj.keySet()) {
-                    return requestObj.get(memberName);
-                }
-            }
-        }
-        return null;
+    private String removeQuotes(String stringWithQuotes) {
+        return stringWithQuotes.replaceAll("\"", "");
     }
 }
